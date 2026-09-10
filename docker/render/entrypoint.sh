@@ -17,6 +17,8 @@ fi
 # unreachable database never delays the web server from starting (Render
 # needs to detect an open port quickly, or the deploy is marked failed).
 (
+  timeout 40 php /var/www/html/database/dbcheck.php || echo "WARNING: diagnostic script failed"
+
   echo "Running database migrations..."
   timeout 30 php /var/www/html/database/migrate.php || echo "WARNING: migration step failed or timed out (check DB env vars / firewall)"
 
