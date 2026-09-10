@@ -15,12 +15,27 @@ final class Database
         $c = $this->config->get('database');
         $dsn = sprintf('mysql:host=%s;port=%d;dbname=%s;charset=%s',
             $c['host'], $c['port'], $c['database'], $c['charset']);
-        $this->pdo = new \PDO($dsn, $c['username'], $c['password'], [
+        $options = [
             \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
             \PDO::ATTR_TIMEOUT => 8,
             \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
             \PDO::ATTR_EMULATE_PREPARES => false,
-        ]);
+        ];
+
+        if (!empty($c['ssl'])) {
+            $ca = $c['ssl_ca'] ?: Application::instance()->basePath('storage/certs/db-ca.pem');
+            if (is_string($ca) && is_file($ca)) {
+                $options[\PDO::MYSQL_ATTR_SSL_CA] = $ca;
+                $options[\PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = (bool)($c['ssl_verify'] ?? false);
+            } elseif (is_file('/etc/ssl/certs/ca-certificates.crt')) {
+                // No private CA supplied: still force an encrypted connection,
+                // but skip verification (self-signed server certificates).
+                $options[\PDO::MYSQL_ATTR_SSL_CA] = '/etc/ssl/certs/ca-certificates.crt';
+                $options[\PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false;
+            }
+        }
+
+        $this->pdo = new \PDO($dsn, $c['username'], $c['password'], $options);
         return $this->pdo;
     }
 

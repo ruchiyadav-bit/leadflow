@@ -3,7 +3,7 @@
 FROM php:8.3-fpm-alpine
 
 RUN apk add --no-cache \
-    bash git curl unzip icu-dev oniguruma-dev libzip-dev \
+    bash git curl unzip icu-dev oniguruma-dev libzip-dev ca-certificates \
     autoconf g++ make linux-headers nginx supervisor gettext \
  && docker-php-ext-install pdo_mysql mbstring intl zip bcmath opcache pcntl \
  && pecl install redis \
