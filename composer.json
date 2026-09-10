@@ -1,0 +1,38 @@
+{
+  "name": "leadflow/pingpost",
+  "description": "High-performance Ping/Post lead distribution platform for US consumer loans/payday leads",
+  "type": "project",
+  "require": {
+    "php": ">=8.3",
+    "ext-pdo": "*",
+    "ext-json": "*",
+    "ext-redis": "*",
+    "guzzlehttp/guzzle": "^7.8",
+    "guzzlehttp/promises": "^2.0",
+    "vlucas/phpdotenv": "^5.6",
+    "monolog/monolog": "^3.5",
+    "ramsey/uuid": "^4.7",
+    "firebase/php-jwt": "^6.10",
+    "predis/predis": "^2.2",
+    "respect/validation": "^2.3",
+    "symfony/http-foundation": "^7.0"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^10.5"
+  },
+  "autoload": {
+    "psr-4": {
+      "LeadFlow\\": "app/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Tests\\": "tests/"
+    }
+  },
+  "scripts": {
+    "migrate": "php database/migrate.php",
+    "seed": "php database/seed.php",
+    "serve": "php -S 0.0.0.0:8080 -t public"
+  }
+}
