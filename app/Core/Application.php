@@ -99,6 +99,18 @@ final class Application
 
     public function handleHttpRequest(): void
     {
+        // CORS headers — allow lander pages from any origin
+        header('Access-Control-Allow-Origin: *');
+        header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+        header('Access-Control-Allow-Headers: Content-Type, X-API-Key, x-api-key, Authorization, Origin, X-Requested-With, Accept');
+        header('Access-Control-Max-Age: 86400');
+
+        // Handle preflight OPTIONS request
+        if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
+            http_response_code(204);
+            exit;
+        }
+
         try {
             $response = $this->router->dispatch(
                 $_SERVER['REQUEST_METHOD'] ?? 'GET',
