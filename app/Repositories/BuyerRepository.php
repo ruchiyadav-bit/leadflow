@@ -86,14 +86,14 @@ final class BuyerRepository
     {
         return $this->db->one(
             "SELECT
-              (SELECT COUNT(*) FROM ping_transactions WHERE buyer_id = :b) AS pinged,
-              (SELECT COUNT(*) FROM ping_transactions WHERE buyer_id = :b AND accepted = 1) AS accepted,
-              (SELECT COUNT(*) FROM ping_transactions WHERE buyer_id = :b AND status = 'timeout') AS timeouts,
-              (SELECT COUNT(*) FROM post_transactions WHERE buyer_id = :b AND success = 1) AS sold,
-              (SELECT COALESCE(SUM(revenue),0) FROM revenue_records WHERE buyer_id = :b) AS revenue,
-              (SELECT AVG(response_time_ms) FROM ping_transactions WHERE buyer_id = :b AND response_time_ms IS NOT NULL) AS avg_response
+              (SELECT COUNT(*) FROM ping_transactions WHERE buyer_id = :b1) AS pinged,
+              (SELECT COUNT(*) FROM ping_transactions WHERE buyer_id = :b2 AND accepted = 1) AS accepted,
+              (SELECT COUNT(*) FROM ping_transactions WHERE buyer_id = :b3 AND status = 'timeout') AS timeouts,
+              (SELECT COUNT(*) FROM post_transactions WHERE buyer_id = :b4 AND success = 1) AS sold,
+              (SELECT COALESCE(SUM(revenue),0) FROM revenue_records WHERE buyer_id = :b5) AS revenue,
+              (SELECT AVG(response_time_ms) FROM ping_transactions WHERE buyer_id = :b6 AND response_time_ms IS NOT NULL) AS avg_response
              ",
-            ['b' => $buyerId]
+            ['b1' => $buyerId, 'b2' => $buyerId, 'b3' => $buyerId, 'b4' => $buyerId, 'b5' => $buyerId, 'b6' => $buyerId]
         ) ?? [];
     }
 }
