@@ -86,6 +86,8 @@ final class Application
             $c->get(\LeadFlow\PingEngine\PingEngine::class),
             $c->get(\LeadFlow\PingEngine\AuctionEngine::class),
             $c->get(\LeadFlow\PostEngine\PostEngine::class),
+            $c->get(\LeadFlow\DirectPost\PostOnlyEngine::class),
+            $c->get(\LeadFlow\Repositories\OfferRepository::class),
             $c->get(Logger::class)
         ));
     }

@@ -86,24 +86,3 @@
 </table>
 </div>
 
-<div class="card">
-<h3>Direct Post Attempts</h3>
-<table>
-  <thead><tr><th>Time</th><th>Buyer</th><th>Min Price</th><th>Decision</th><th>Price</th><th>Buyer Lead ID</th><th>Message</th><th>RT</th></tr></thead>
-  <tbody>
-  <?php foreach (($directPosts ?? []) as $a): ?>
-    <tr>
-      <td><?= View::e($a['created_at']) ?></td>
-      <td><?= View::e($a['buyer_name']) ?></td>
-      <td>$<?= number_format((float)$a['minimum_price'], 2) ?></td>
-      <td><?= $a['decision'] ? '<span class="badge ' . ($a['decision'] === 'APPROVED' ? 'badge-ok' : 'badge-err') . '">' . View::e($a['decision']) . '</span>' : '<span class="badge badge-warn">' . View::e($a['error_message'] ?? 'ERR') . '</span>' ?></td>
-      <td><?= $a['price'] !== null ? '$' . number_format((float)$a['price'], 2) : '-' ?></td>
-      <td><?= View::e($a['buyer_lead_id'] ?? '-') ?></td>
-      <td class="muted"><?= View::e($a['message'] ?? '') ?></td>
-      <td><?= (int)$a['response_time_ms'] ?>ms</td>
-    </tr>
-  <?php endforeach; ?>
-  <?php if (empty($directPosts)): ?><tr><td colspan="8" class="muted">No direct post attempts.</td></tr><?php endif; ?>
-  </tbody>
-</table>
-</div>

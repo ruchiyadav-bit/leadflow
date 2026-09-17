@@ -11,7 +11,6 @@ use LeadFlow\Repositories\PingRepository;
 use LeadFlow\Services\LeadOrchestrator;
 use LeadFlow\Services\PingTreeService;
 use LeadFlow\Core\Database;
-use LeadFlow\DirectPost\DirectPostEngine;
 use LeadFlow\DirectPost\RoundSkyClient;
 
 final class LeadApiController
@@ -21,7 +20,6 @@ final class LeadApiController
         private PingRepository $pings,
         private LeadOrchestrator $orchestrator,
         private Database $db,
-        private DirectPostEngine $directPost,
     ) {}
 
     public function create(Request $req): Response
@@ -94,30 +92,22 @@ final class LeadApiController
         // Choose ping tree and process synchronously (low latency)
         $treeService = new PingTreeService($this->db);
         $tree = $treeService->findForLead($lead);
-        $outcome = $this->orchestrator->process($lead, $tree);
+        $outcome = $this->orchestrator->process($lead, $tree, [
+            'raw' => $data,
+            'ip' => $req->ip(),
+            'user_agent' => $req->header('user-agent'),
+            'base_url' => $this->baseUrl($req),
+        ]);
 
         $payload = [
             'lead_id' => $lead['lead_id'],
             'outcome' => $outcome,
         ];
 
-        // Direct Post buyers (e.g. Round Sky): try when ping/post did not sell the lead
-        if (($outcome['status'] ?? '') !== 'sold' && $this->directPost->hasActiveBuyers()) {
-            $direct = $this->directPost->process($lead, $data, $req->ip(), $req->header('user-agent'));
-            $payload['direct_post'] = [
-                'status' => $direct['status'],
-                'buyer' => $direct['buyer_name'] ?? null,
-                'price' => $direct['price'] ?? null,
-            ];
-            if ($direct['status'] === 'sold' && !empty($direct['redirect_url'])) {
-                // Buyer requires the consumer's browser to be redirected here
-                $payload['redirect_url'] = $direct['redirect_url'];
-                return Response::json($payload, 201);
-            }
-        }
-
-        // Affiliate offer (S2S Dashboard / Affiliate Direct): return a tracked redirect link for the lander
-        if (!empty($data['offer_id']) && ctype_digit((string)$data['offer_id'])) {
+        // Where to send the consumer: post-only buyer URL or ping-tree offer (from orchestrator), else explicit offer_id
+        if (!empty($outcome['redirect_url'])) {
+            $payload['redirect_url'] = $outcome['redirect_url'];
+        } elseif (!empty($data['offer_id']) && ctype_digit((string)$data['offer_id'])) {
             $payload['redirect_url'] = $this->baseUrl($req) . '/go/' . (int)$data['offer_id']
                 . '?' . http_build_query(['lead_id' => $lead['lead_id'], 'sub_id' => $data['sub_id'] ?? null]);
         }

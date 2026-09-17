@@ -7,10 +7,11 @@ use LeadFlow\Core\Request;
 use LeadFlow\Core\Response;
 use LeadFlow\Core\View;
 use LeadFlow\Repositories\BuyerRepository;
+use LeadFlow\DirectPost\PostOnlyEngine;
 
 final class BuyersController
 {
-    public function __construct(private BuyerRepository $buyers) {}
+    public function __construct(private BuyerRepository $buyers, private PostOnlyEngine $postOnly) {}
 
     public function index(Request $req): Response
     {
@@ -28,25 +29,44 @@ final class BuyersController
 
     public function store(Request $req): Response
     {
-        $data = $this->parseForm($req);
-        $id = $this->buyers->create($data);
+        try {
+            $id = $this->buyers->create($this->parseForm($req));
+        } catch (\Throwable $e) {
+            return View::render('buyers.form', ['buyer' => null, 'error' => $e->getMessage(), 'user' => $req->user]);
+        }
         return Response::redirect('/buyers/' . $id);
     }
 
-    public function show(Request $req): Response
+    public function show(Request $req, ?array $testResult = null, ?string $error = null): Response
     {
         $b = $this->buyers->findById((int)$req->route('id'));
         if (!$b) return Response::redirect('/buyers');
         $b['stats'] = $this->buyers->stats((int)$b['id']);
         $b['counts'] = $this->buyers->counts((int)$b['id']);
-        return View::render('buyers.form', ['buyer' => $b, 'user' => $req->user]);
+        return View::render('buyers.form', ['buyer' => $b, 'testResult' => $testResult, 'error' => $error, 'user' => $req->user]);
     }
 
     public function update(Request $req): Response
     {
-        $data = $this->parseForm($req);
-        $this->buyers->update((int)$req->route('id'), $data);
+        try {
+            $this->buyers->update((int)$req->route('id'), $this->parseForm($req));
+        } catch (\Throwable $e) {
+            return $this->show($req, null, $e->getMessage());
+        }
         return Response::redirect('/buyers/' . $req->route('id'));
+    }
+
+    /** Post-only buyer integration test (Round Sky test URL): declined / approved sample lead. */
+    public function testPostOnly(Request $req): Response
+    {
+        $b = $this->buyers->findById((int)$req->route('id'));
+        if (!$b) return Response::redirect('/buyers');
+        if (($b['integration_type'] ?? '') !== 'post_only') return $this->show($req, null, 'Test is only for Post Only buyers.');
+        if (empty($b['post_credentials']['partner'])) return $this->show($req, null, 'Save Partner ID and Partner Password first.');
+        $kind = ($req->body['kind'] ?? '') === 'approved' ? 'approved' : 'declined';
+        $result = $this->postOnly->runTest($b, $kind);
+        $result['kind'] = $kind;
+        return $this->show($req, $result);
     }
 
     public function toggle(Request $req): Response
@@ -58,7 +78,9 @@ final class BuyersController
     private function parseForm(Request $req): array
     {
         $b = $req->body;
+        $type = ($b['integration_type'] ?? 'ping_post') === 'post_only' ? 'post_only' : 'ping_post';
         $out = [
+            'integration_type' => $type,
             'name' => $b['name'] ?? '',
             'active' => (int)($b['active'] ?? 0),
             'ping_url' => $b['ping_url'] ?? '',
@@ -79,6 +101,42 @@ final class BuyersController
                 $decoded = json_decode($b[$k . '_json'], true);
                 $out[$k] = is_array($decoded) ? $decoded : [];
             }
+        }
+        if ($type === 'post_only') {
+            $out['ping_url'] = '';
+            if ($out['post_url'] === '') throw new \InvalidArgumentException('Live Post URL is required.');
+            $list = fn($k) => array_values(array_filter(array_map('trim', explode(',', (string)($b[$k] ?? '')))));
+            $tiers = array_values(array_filter($list('po_price_tiers'), 'is_numeric'));
+            $out['post_config'] = [
+                'format' => 'roundsky',
+                'test_mode' => (int)($b['po_test_mode'] ?? 1),
+                'test_url' => trim((string)($b['po_test_url'] ?? '')),
+                'sub_id' => trim((string)($b['po_sub_id'] ?? '')),
+                'domain' => trim((string)($b['po_domain'] ?? '')),
+                'time_allowed' => max(20, (int)($b['po_time_allowed'] ?? 20)),
+                'total_budget_s' => max(20, (int)($b['po_total_budget_s'] ?? 45)),
+                'price_tiers' => $tiers ? array_map('floatval', $tiers) : PostOnlyEngine::DEFAULT_TIERS,
+                'filters' => [
+                    'account_types' => array_map('strtolower', $list('po_f_account_types')),
+                    'exclude_military' => !empty($b['po_f_exclude_military']),
+                    'excluded_states' => array_map('strtoupper', $list('po_f_excluded_states')),
+                    'min_age' => (int)($b['po_f_min_age'] ?? 20),
+                    'max_age' => (int)($b['po_f_max_age'] ?? 80),
+                    'min_income' => (float)($b['po_f_min_income'] ?? 1200),
+                    'max_income' => (float)($b['po_f_max_income'] ?? 10000),
+                    'work_phone_not_home_phone' => !empty($b['po_f_work_phone_not_home_phone']),
+                ],
+            ];
+            $partner = trim((string)($b['po_partner'] ?? ''));
+            $password = trim((string)($b['po_partner_password'] ?? ''));
+            if ($partner !== '' || $password !== '') {
+                if ($partner === '' || $password === '') {
+                    throw new \InvalidArgumentException('Enter both Partner ID and Partner Password (or leave both blank to keep saved ones).');
+                }
+                $out['post_credentials'] = ['partner' => $partner, 'partner_password' => $password];
+            }
+        } elseif ($out['ping_url'] === '' || $out['post_url'] === '') {
+            throw new \InvalidArgumentException('Ping URL and Post URL are required for Ping + Post buyers.');
         }
         return $out;
     }

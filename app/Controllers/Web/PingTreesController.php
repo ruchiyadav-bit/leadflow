@@ -8,10 +8,11 @@ use LeadFlow\Core\Response;
 use LeadFlow\Core\View;
 use LeadFlow\Services\PingTreeService;
 use LeadFlow\Repositories\BuyerRepository;
+use LeadFlow\Repositories\OfferRepository;
 
 final class PingTreesController
 {
-    public function __construct(private PingTreeService $svc, private BuyerRepository $buyers) {}
+    public function __construct(private PingTreeService $svc, private BuyerRepository $buyers, private OfferRepository $offers) {}
 
     public function index(Request $req): Response
     {
@@ -19,7 +20,7 @@ final class PingTreesController
     }
     public function create(Request $req): Response
     {
-        return View::render('reports.pingtree_form', ['tree' => null, 'buyers' => $this->buyers->all(), 'user' => $req->user]);
+        return View::render('reports.pingtree_form', ['tree' => null, 'buyers' => $this->buyers->all(), 'offers' => $this->offers->all(), 'user' => $req->user]);
     }
     public function store(Request $req): Response
     {
@@ -30,7 +31,7 @@ final class PingTreesController
     {
         $t = $this->svc->find((int)$req->route('id'));
         if (!$t) return Response::redirect('/ping-trees');
-        return View::render('reports.pingtree_form', ['tree' => $t, 'buyers' => $this->buyers->all(), 'user' => $req->user]);
+        return View::render('reports.pingtree_form', ['tree' => $t, 'buyers' => $this->buyers->all(), 'offers' => $this->offers->all(), 'user' => $req->user]);
     }
     public function update(Request $req): Response
     {
@@ -52,6 +53,7 @@ final class PingTreesController
             'campaign_id' => $b['campaign_id'] !== '' ? (int)$b['campaign_id'] : null,
             'buyer_ids' => array_map('intval', $b['buyer_ids'] ?? []),
             'fallback_ids' => array_map('intval', $b['fallback_ids'] ?? []),
+            'offer_ids' => array_map('intval', $b['offer_ids'] ?? []),
         ];
     }
 }

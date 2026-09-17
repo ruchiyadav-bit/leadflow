@@ -20,7 +20,14 @@ foreach ($files as $f) {
     $statements = array_filter(array_map('trim', preg_split('/;\s*[\r\n]/', $sql)));
     foreach ($statements as $stmt) {
         if ($stmt === '' || str_starts_with($stmt, '--')) continue;
-        $db->pdo()->exec($stmt);
+        try {
+            $db->pdo()->exec($stmt);
+        } catch (\PDOException $e) {
+            // Migrations re-run on every deploy: ignore "already applied" errors
+            // 1060 duplicate column, 1061 duplicate key, 1091 can't drop (doesn't exist)
+            $code = (int)($e->errorInfo[1] ?? 0);
+            if (!in_array($code, [1060, 1061, 1091], true)) throw $e;
+        }
     }
     echo "OK\n";
 }

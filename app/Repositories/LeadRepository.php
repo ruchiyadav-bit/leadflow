@@ -107,6 +107,12 @@ final class LeadRepository
         $this->recordStatus($this->db, $leadId, $from, $to, $note);
     }
 
+    /** Adds a journey note without changing the lead status. */
+    public function addNote(int $leadId, string $status, string $note): void
+    {
+        $this->recordStatus($this->db, $leadId, $status, $status, $note);
+    }
+
     public function setWinner(int $leadId, int $buyerId, float $revenue, ?string $transactionId): void
     {
         $this->db->query(

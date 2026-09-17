@@ -40,6 +40,7 @@ final class PingTreeService
             'campaign_id' => $data['campaign_id'] ?? null,
             'buyer_ids_json' => json_encode($data['buyer_ids'] ?? []),
             'fallback_ids_json' => json_encode($data['fallback_ids'] ?? []),
+            'offer_ids_json' => json_encode($data['offer_ids'] ?? []),
             'created_at' => $now, 'updated_at' => $now,
         ]);
         return (int)$this->db->pdo()->lastInsertId();
@@ -53,6 +54,7 @@ final class PingTreeService
         }
         if (array_key_exists('buyer_ids', $data)) $set['buyer_ids_json'] = json_encode($data['buyer_ids']);
         if (array_key_exists('fallback_ids', $data)) $set['fallback_ids_json'] = json_encode($data['fallback_ids']);
+        if (array_key_exists('offer_ids', $data)) $set['offer_ids_json'] = json_encode($data['offer_ids']);
         $set['updated_at'] = date('Y-m-d H:i:s');
         $this->db->update('ping_trees', $set, 'id = :id', ['id' => $id]);
     }

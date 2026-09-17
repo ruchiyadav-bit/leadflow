@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace LeadFlow\Repositories;
 
 use LeadFlow\Core\Database;
+use LeadFlow\Support\Crypto;
 
 final class BuyerRepository
 {
@@ -23,6 +24,11 @@ final class BuyerRepository
         $b['field_map']   = json_decode($b['field_map_json'] ?? '{}', true) ?: [];
         $b['transformations'] = json_decode($b['transformations_json'] ?? '[]', true) ?: [];
         $b['response_rules']  = json_decode($b['response_rules_json'] ?? '{}', true) ?: [];
+        $b['integration_type'] = $b['integration_type'] ?? 'ping_post';
+        $b['post_config'] = json_decode($b['post_config_json'] ?? '{}', true) ?: [];
+        $plain = Crypto::decrypt($b['credentials_enc'] ?? null);
+        $b['post_credentials'] = $plain ? (json_decode($plain, true) ?: []) : [];
+        unset($b['credentials_enc']);
         return $b;
     }
 
@@ -51,6 +57,9 @@ final class BuyerRepository
             'total_cap'   => $data['total_cap'] ?? null,
             'schedule_json' => json_encode($data['schedule'] ?? []),
             'rules_json'    => json_encode($data['rules'] ?? []),
+            'integration_type' => $data['integration_type'] ?? 'ping_post',
+            'post_config_json' => json_encode($data['post_config'] ?? []),
+            'credentials_enc'  => !empty($data['post_credentials']) ? Crypto::encrypt(json_encode($data['post_credentials'])) : null,
             'created_at' => $now,
             'updated_at' => $now,
         ]);
@@ -64,6 +73,9 @@ final class BuyerRepository
         foreach ($allowed as $k) if (array_key_exists($k, $data)) $update[$k] = $data[$k];
         $jsonFields = ['credentials'=>'credentials_json','headers'=>'headers_json','field_map'=>'field_map_json','transformations'=>'transformations_json','response_rules'=>'response_rules_json','schedule'=>'schedule_json','rules'=>'rules_json'];
         foreach ($jsonFields as $k => $col) if (array_key_exists($k, $data)) $update[$col] = json_encode($data[$k]);
+        if (array_key_exists('integration_type', $data)) $update['integration_type'] = $data['integration_type'];
+        if (array_key_exists('post_config', $data)) $update['post_config_json'] = json_encode($data['post_config']);
+        if (!empty($data['post_credentials'])) $update['credentials_enc'] = Crypto::encrypt(json_encode($data['post_credentials']));
         $update['updated_at'] = date('Y-m-d H:i:s');
         $this->db->update('buyers', $update, 'id = :id', ['id' => $id]);
     }

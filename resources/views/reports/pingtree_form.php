@@ -3,6 +3,8 @@ $t = $tree ?? [];
 $action = $tree ? '/ping-trees/' . (int)$t['id'] : '/ping-trees';
 $selected = $tree ? (json_decode($t['buyer_ids_json'] ?? '[]', true) ?: []) : [];
 $fallback = $tree ? (json_decode($t['fallback_ids_json'] ?? '[]', true) ?: []) : [];
+$offerSel = $tree ? (json_decode($t['offer_ids_json'] ?? '[]', true) ?: []) : [];
+$offers = $offers ?? [];
 ?>
 <h2><?= $tree ? 'Edit Ping Tree' : 'New Ping Tree' ?></h2>
 <form method="post" action="<?= View::e($action) ?>" class="card">
@@ -30,7 +32,7 @@ $fallback = $tree ? (json_decode($t['fallback_ids_json'] ?? '[]', true) ?: []) :
   <div class="form-row"><label>Buyers (multi-select)</label>
     <select name="buyer_ids[]" multiple size="8">
       <?php foreach ($buyers as $b): ?>
-        <option value="<?= (int)$b['id'] ?>" <?= in_array((int)$b['id'], $selected, true) ? 'selected':'' ?>><?= View::e($b['name']) ?></option>
+        <option value="<?= (int)$b['id'] ?>" <?= in_array((int)$b['id'], $selected, true) ? 'selected':'' ?>><?= View::e($b['name']) ?> — <?= ($b['integration_type'] ?? 'ping_post') === 'post_only' ? 'Post Only' : 'Ping + Post' ?></option>
       <?php endforeach; ?>
     </select>
   </div>
@@ -40,6 +42,14 @@ $fallback = $tree ? (json_decode($t['fallback_ids_json'] ?? '[]', true) ?: []) :
         <option value="<?= (int)$b['id'] ?>" <?= in_array((int)$b['id'], $fallback, true) ? 'selected':'' ?>><?= View::e($b['name']) ?></option>
       <?php endforeach; ?>
     </select>
+  </div>
+  <div class="form-row"><label>Offers — affiliate link buyers (multi-select)</label>
+    <select name="offer_ids[]" multiple size="5">
+      <?php foreach ($offers as $o): ?>
+        <option value="<?= (int)$o['id'] ?>" <?= in_array((int)$o['id'], $offerSel, true) ? 'selected':'' ?>><?= View::e($o['name']) ?> — <?= $o['delivery_mode'] === 's2s' ? 'S2S Dashboard' : 'Affiliate Direct' ?><?= (int)$o['active'] ? '' : ' (inactive)' ?></option>
+      <?php endforeach; ?>
+    </select>
+    <div class="muted" style="margin-top:4px">Order: Ping + Post buyers → Post Only buyers → first active offer here (lead gets its redirect link). Hold Ctrl to select multiple.</div>
   </div>
   <button class="btn" type="submit"><?= $tree ? 'Save' : 'Create' ?></button>
 </form>

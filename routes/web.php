@@ -8,7 +8,6 @@ use LeadFlow\Controllers\Web\LeadsController;
 use LeadFlow\Controllers\Web\PingTreesController;
 use LeadFlow\Controllers\Web\ReportsController;
 use LeadFlow\Controllers\Web\OffersController;
-use LeadFlow\Controllers\Web\DirectBuyersController;
 use LeadFlow\Controllers\Api\OfferTrackingController;
 use LeadFlow\Middleware\WebAuthMiddleware;
 
@@ -29,6 +28,7 @@ $router->group(['middleware' => [WebAuthMiddleware::class]], function ($r) {
     $r->get('/buyers/{id}', [BuyersController::class, 'show']);
     $r->post('/buyers/{id}', [BuyersController::class, 'update']);
     $r->post('/buyers/{id}/toggle', [BuyersController::class, 'toggle']);
+    $r->post('/buyers/{id}/test-post', [BuyersController::class, 'testPostOnly']);
 
     $r->get('/leads', [LeadsController::class, 'index']);
     $r->get('/leads/{id}', [LeadsController::class, 'show']);
@@ -38,14 +38,6 @@ $router->group(['middleware' => [WebAuthMiddleware::class]], function ($r) {
     $r->post('/ping-trees', [PingTreesController::class, 'store']);
     $r->get('/ping-trees/{id}', [PingTreesController::class, 'show']);
     $r->post('/ping-trees/{id}', [PingTreesController::class, 'update']);
-
-    $r->get('/direct-buyers', [DirectBuyersController::class, 'index']);
-    $r->get('/direct-buyers/new', [DirectBuyersController::class, 'create']);
-    $r->post('/direct-buyers', [DirectBuyersController::class, 'store']);
-    $r->get('/direct-buyers/{id}', [DirectBuyersController::class, 'show']);
-    $r->post('/direct-buyers/{id}', [DirectBuyersController::class, 'update']);
-    $r->post('/direct-buyers/{id}/toggle', [DirectBuyersController::class, 'toggle']);
-    $r->post('/direct-buyers/{id}/test', [DirectBuyersController::class, 'test']);
 
     $r->get('/offers', [OffersController::class, 'index']);
     $r->get('/offers/new', [OffersController::class, 'create']);
