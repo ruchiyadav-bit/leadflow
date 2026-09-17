@@ -103,7 +103,7 @@ final class RoundSkyClient
             'birth_date' => Normalizer::date((string)$v('birth_date', 'date_of_birth')),
             'social_security_number' => preg_replace('/\D+/', '', (string)$v('social_security_number', 'ssn')),
             'high_debt' => $this->boolStr($v('high_debt')),
-            'creditScore' => $v('creditScore', 'credit_score'),
+            'creditScore' => is_numeric($v('creditScore')) ? (int)$v('creditScore') : null,
             'has_clean_title' => $this->boolStr($v('has_clean_title')),
         ];
         foreach ($out as $k => $val) {
