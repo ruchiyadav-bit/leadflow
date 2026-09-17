@@ -11,6 +11,8 @@ use LeadFlow\Repositories\PingRepository;
 use LeadFlow\Services\LeadOrchestrator;
 use LeadFlow\Services\PingTreeService;
 use LeadFlow\Core\Database;
+use LeadFlow\DirectPost\DirectPostEngine;
+use LeadFlow\DirectPost\RoundSkyClient;
 
 final class LeadApiController
 {
@@ -19,6 +21,7 @@ final class LeadApiController
         private PingRepository $pings,
         private LeadOrchestrator $orchestrator,
         private Database $db,
+        private DirectPostEngine $directPost,
     ) {}
 
     public function create(Request $req): Response
@@ -83,7 +86,8 @@ final class LeadApiController
             'consent_version','disclosure_version','privacy_version','terms_version','landing_url','consent_timestamp',
             'offer_id',
         ]);
-        $custom = array_diff_key($data, array_flip($known));
+        // Sensitive fields (SSN, bank, license) are used only in-memory for direct posts and never stored
+        $custom = array_diff_key($data, array_flip($known), array_flip(RoundSkyClient::SENSITIVE));
 
         $lead = $this->leads->create($core, $custom, $consent, $attribution);
 
@@ -96,6 +100,21 @@ final class LeadApiController
             'lead_id' => $lead['lead_id'],
             'outcome' => $outcome,
         ];
+
+        // Direct Post buyers (e.g. Round Sky): try when ping/post did not sell the lead
+        if (($outcome['status'] ?? '') !== 'sold' && $this->directPost->hasActiveBuyers()) {
+            $direct = $this->directPost->process($lead, $data, $req->ip(), $req->header('user-agent'));
+            $payload['direct_post'] = [
+                'status' => $direct['status'],
+                'buyer' => $direct['buyer_name'] ?? null,
+                'price' => $direct['price'] ?? null,
+            ];
+            if ($direct['status'] === 'sold' && !empty($direct['redirect_url'])) {
+                // Buyer requires the consumer's browser to be redirected here
+                $payload['redirect_url'] = $direct['redirect_url'];
+                return Response::json($payload, 201);
+            }
+        }
 
         // Affiliate offer (S2S Dashboard / Affiliate Direct): return a tracked redirect link for the lander
         if (!empty($data['offer_id']) && ctype_digit((string)$data['offer_id'])) {
