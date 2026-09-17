@@ -52,6 +52,7 @@ pre { background:#0d1117; padding:12px; border-radius:6px; overflow-x:auto; font
     <a href="/dashboard">Dashboard</a>
     <a href="/leads">Leads</a>
     <a href="/buyers">Buyers</a>
+    <a href="/direct-buyers">Direct Buyers</a>
     <a href="/ping-trees">Ping Trees</a>
     <a href="/offers">Offers</a>
     <a href="/reports">Reports</a>

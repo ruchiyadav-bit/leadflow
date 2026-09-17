@@ -9,10 +9,11 @@ use LeadFlow\Core\View;
 use LeadFlow\Repositories\LeadRepository;
 use LeadFlow\Repositories\PingRepository;
 use LeadFlow\Repositories\OfferRepository;
+use LeadFlow\DirectPost\DirectPostBuyerRepository;
 
 final class LeadsController
 {
-    public function __construct(private LeadRepository $leads, private PingRepository $pings, private OfferRepository $offers) {}
+    public function __construct(private LeadRepository $leads, private PingRepository $pings, private OfferRepository $offers, private DirectPostBuyerRepository $directBuyers) {}
 
     public function index(Request $req): Response
     {
@@ -31,6 +32,7 @@ final class LeadsController
             'pings' => $this->pings->pingsForLead((int)$lead['id']),
             'posts' => $this->pings->postsForLead((int)$lead['id']),
             'offerClicks' => $this->offers->clicksForLead((int)$lead['id']),
+            'directPosts' => $this->directBuyers->attemptsForLead((int)$lead['id']),
             'user' => $req->user,
         ]);
     }
