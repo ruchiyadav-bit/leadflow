@@ -8,7 +8,6 @@ use LeadFlow\Controllers\Web\LeadsController;
 use LeadFlow\Controllers\Web\PingTreesController;
 use LeadFlow\Controllers\Web\ReportsController;
 use LeadFlow\Controllers\Web\OffersController;
-use LeadFlow\Controllers\Web\FormPartnersController;
 use LeadFlow\Controllers\Api\OfferTrackingController;
 use LeadFlow\Middleware\WebAuthMiddleware;
 
@@ -46,16 +45,6 @@ $router->group(['middleware' => [WebAuthMiddleware::class]], function ($r) {
     $r->get('/offers/{id}', [OffersController::class, 'show']);
     $r->post('/offers/{id}', [OffersController::class, 'update']);
     $r->post('/offers/{id}/toggle', [OffersController::class, 'toggle']);
-
-    // Form Partners (hidden: no sidebar link, super_admin/admin only)
-    $r->get('/form-partners', [FormPartnersController::class, 'index']);
-    $r->get('/form-partners/new', [FormPartnersController::class, 'create']);
-    $r->get('/form-partners/log', [FormPartnersController::class, 'log']);
-    $r->post('/form-partners', [FormPartnersController::class, 'store']);
-    $r->post('/form-partners/submissions/{id}/retry', [FormPartnersController::class, 'retry']);
-    $r->get('/form-partners/{id}', [FormPartnersController::class, 'show']);
-    $r->post('/form-partners/{id}', [FormPartnersController::class, 'update']);
-    $r->post('/form-partners/{id}/toggle', [FormPartnersController::class, 'toggle']);
 
     $r->get('/reports', [ReportsController::class, 'index']);
     $r->get('/reports/revenue.csv', [ReportsController::class, 'exportRevenueCsv']);

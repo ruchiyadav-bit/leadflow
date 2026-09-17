@@ -90,13 +90,6 @@ final class LeadApiController
 
         $lead = $this->leads->create($core, $custom, $consent, $attribution);
 
-        // Queue for permission-based Form Partners (processed by the separate worker service)
-        try {
-            (new \LeadFlow\Repositories\FormPartnerRepository($this->db))->enqueueLead((int)$lead['id']);
-        } catch (\Throwable $e) {
-            error_log('Form partner enqueue failed: ' . $e->getMessage());
-        }
-
         // Choose ping tree and process synchronously (low latency)
         $treeService = new PingTreeService($this->db);
         $tree = $treeService->findForLead($lead);
