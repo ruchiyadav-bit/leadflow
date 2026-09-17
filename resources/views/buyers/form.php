@@ -73,6 +73,12 @@ $json = fn($k, $default = '{}') => htmlspecialchars(json_encode($b[$k] ?? json_d
   <div class="form-row"><label><input type="checkbox" name="po_f_exclude_military" value="1" style="width:auto" <?= !empty($pc['filters']['exclude_military']) ? 'checked' : '' ?>> Exclude military</label></div>
   <div class="form-row"><label><input type="checkbox" name="po_f_work_phone_not_home_phone" value="1" style="width:auto" <?= !empty($pc['filters']['work_phone_not_home_phone']) ? 'checked' : '' ?>> Reject if work phone = home phone</label></div>
 </div>
+<div class="form-row"><label>Field Mapping JSON  { "round_sky_field": "your_form_field" }</label>
+<textarea name="po_field_map_json" placeholder='{"social_security_number":"ssn","account_number":"bank_account"}'><?= ($type === 'post_only' && !empty($b['field_map'])) ? htmlspecialchars(json_encode($b['field_map'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), ENT_QUOTES) : '' ?></textarea>
+<div class="muted" style="margin-top:4px">Only fields whose form name differs from Round Sky's need to be listed. Round Sky fields: <?= View::e(implode(', ', \LeadFlow\DirectPost\RoundSkyClient::FIELDS)) ?></div></div>
+<div class="form-row"><label>Value Mapping JSON  { "round_sky_field": { "Form Value": "round_sky_value" } }</label>
+<textarea name="po_value_map_json" placeholder='{"housing":{"Own Home":"own","Renting":"rent"},"account_type":{"Checking Account":"checking"}}'><?= !empty($pc['value_map']) ? htmlspecialchars(json_encode($pc['value_map'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), ENT_QUOTES) : '' ?></textarea>
+<div class="muted" style="margin-top:4px">Match is case-insensitive. Values not listed are sent as-is.</div></div>
 </div>
 <div class="pp-only">
 <div class="form-row"><label>Credentials JSON (type: bearer/basic/api_key)</label>

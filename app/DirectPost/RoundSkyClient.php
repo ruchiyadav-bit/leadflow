@@ -17,6 +17,15 @@ final class RoundSkyClient
         'driving_license_number', 'partner_password',
     ];
 
+    /** All applicant fields Round Sky accepts (for mapping UI). */
+    public const FIELDS = [
+        'first_name', 'last_name', 'email', 'home_phone', 'zip', 'address', 'city', 'state', 'housing', 'monthly_income',
+        'account_type', 'direct_deposit', 'pay_period', 'next_pay_date', 'second_pay_date', 'requested_loan_amount',
+        'months_at_residence', 'income_type', 'active_military', 'occupation', 'employer', 'work_phone', 'months_employed',
+        'bank_name', 'account_number', 'routing_number', 'months_with_bank', 'driving_license_state',
+        'driving_license_number', 'birth_date', 'social_security_number', 'high_debt', 'creditScore', 'has_clean_title',
+    ];
+
     private const OPTIONAL = [
         'city', 'second_pay_date', 'occupation', 'high_debt', 'creditScore', 'has_clean_title',
     ];
@@ -28,6 +37,29 @@ final class RoundSkyClient
         'bank_name', 'account_number', 'routing_number', 'months_with_bank', 'driving_license_state',
         'driving_license_number', 'birth_date', 'social_security_number',
     ];
+
+    /**
+     * Per-buyer mapping of the form's field names/values to Round Sky's.
+     * $fieldMap:  { "round_sky_field": "form_field" }
+     * $valueMap:  { "round_sky_field": { "Form Value": "roundsky_value" } }  (case-insensitive)
+     */
+    public static function applyMapping(array $lead, array $raw, array $fieldMap, array $valueMap): array
+    {
+        $out = $raw;
+        foreach ($fieldMap as $rsField => $formField) {
+            if (!is_string($rsField) || !is_string($formField) || $formField === '') continue;
+            if (array_key_exists($formField, $raw) && $raw[$formField] !== '') $out[$rsField] = $raw[$formField];
+            elseif (array_key_exists($formField, $lead) && $lead[$formField] !== null && $lead[$formField] !== '') $out[$rsField] = $lead[$formField];
+        }
+        foreach ($valueMap as $rsField => $map) {
+            if (!is_array($map) || !isset($out[$rsField]) || !is_scalar($out[$rsField])) continue;
+            $current = strtolower(trim((string)$out[$rsField]));
+            foreach ($map as $from => $to) {
+                if (strtolower(trim((string)$from)) === $current) { $out[$rsField] = $to; break; }
+            }
+        }
+        return $out;
+    }
 
     /** Build the applicant part of the payload from LeadFlow lead row + raw intake data. */
     public function applicant(array $lead, array $raw): array

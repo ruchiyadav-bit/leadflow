@@ -80,6 +80,19 @@ final class BuyerRepository
         $this->db->update('buyers', $update, 'id = :id', ['id' => $id]);
     }
 
+    /** Form field names that post-only buyers map to sensitive Round Sky fields (never stored). */
+    public function sensitiveFormFields(array $sensitive): array
+    {
+        $names = [];
+        foreach ($this->db->all("SELECT field_map_json FROM buyers WHERE integration_type = 'post_only'") as $row) {
+            $map = json_decode($row['field_map_json'] ?? '{}', true) ?: [];
+            foreach ($map as $rsField => $formField) {
+                if (in_array($rsField, $sensitive, true) && is_string($formField) && $formField !== '') $names[] = $formField;
+            }
+        }
+        return array_values(array_unique($names));
+    }
+
     public function toggleActive(int $id): void
     {
         $this->db->query('UPDATE buyers SET active = 1 - active, updated_at = NOW() WHERE id = :id', ['id' => $id]);

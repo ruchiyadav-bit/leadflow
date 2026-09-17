@@ -85,7 +85,8 @@ final class LeadApiController
             'offer_id',
         ]);
         // Sensitive fields (SSN, bank, license) are used only in-memory for direct posts and never stored
-        $custom = array_diff_key($data, array_flip($known), array_flip(RoundSkyClient::SENSITIVE));
+        $sensitive = array_merge(RoundSkyClient::SENSITIVE, (new \LeadFlow\Repositories\BuyerRepository($this->db))->sensitiveFormFields(RoundSkyClient::SENSITIVE));
+        $custom = array_diff_key($data, array_flip($known), array_flip($sensitive));
 
         $lead = $this->leads->create($core, $custom, $consent, $attribution);
 

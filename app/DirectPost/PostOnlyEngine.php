@@ -37,6 +37,7 @@ final class PostOnlyEngine
             'total_budget_s' => max(20, (int)($c['total_budget_s'] ?? 45)),
             'price_tiers' => !empty($c['price_tiers']) ? array_map('floatval', $c['price_tiers']) : self::DEFAULT_TIERS,
             'filters' => array_merge(self::DEFAULT_FILTERS, $c['filters'] ?? []),
+            'value_map' => is_array($c['value_map'] ?? null) ? $c['value_map'] : [],
         ];
     }
 
@@ -49,7 +50,8 @@ final class PostOnlyEngine
         $attempts = [];
         foreach ($buyers as $buyer) {
             $cfg = self::config($buyer);
-            $applicant = $this->client->applicant($lead, $raw);
+            $mapped = RoundSkyClient::applyMapping($lead, $raw, $buyer['field_map'] ?? [], $cfg['value_map']);
+            $applicant = $this->client->applicant($lead, $mapped);
             if ($reason = $this->client->filterReason($applicant, $cfg['filters'])) {
                 $attempts[] = ['buyer_id' => (int)$buyer['id'], 'skipped' => 'filter: ' . $reason];
                 continue;

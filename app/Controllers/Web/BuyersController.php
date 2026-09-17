@@ -107,8 +107,18 @@ final class BuyersController
             if ($out['post_url'] === '') throw new \InvalidArgumentException('Live Post URL is required.');
             $list = fn($k) => array_values(array_filter(array_map('trim', explode(',', (string)($b[$k] ?? '')))));
             $tiers = array_values(array_filter($list('po_price_tiers'), 'is_numeric'));
+            $jsonObj = function (string $key, string $label) use ($b): array {
+                $rawJson = trim((string)($b[$key] ?? ''));
+                if ($rawJson === '') return [];
+                $d = json_decode($rawJson, true);
+                if (!is_array($d)) throw new \InvalidArgumentException($label . ' is not valid JSON.');
+                return $d;
+            };
+            $out['field_map'] = $jsonObj('po_field_map_json', 'Field Mapping');
+            $valueMap = $jsonObj('po_value_map_json', 'Value Mapping');
             $out['post_config'] = [
                 'format' => 'roundsky',
+                'value_map' => $valueMap,
                 'test_mode' => (int)($b['po_test_mode'] ?? 1),
                 'test_url' => trim((string)($b['po_test_url'] ?? '')),
                 'sub_id' => trim((string)($b['po_sub_id'] ?? '')),
