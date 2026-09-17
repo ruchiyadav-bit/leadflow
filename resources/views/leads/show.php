@@ -65,3 +65,23 @@
   </tbody>
 </table>
 </div>
+
+<div class="card">
+<h3>Offer Clicks</h3>
+<table>
+  <thead><tr><th>Time</th><th>Offer</th><th>Mode</th><th>Click ID</th><th>Converted</th><th>Payout</th></tr></thead>
+  <tbody>
+  <?php foreach (($offerClicks ?? []) as $c): $isS2s = $c['delivery_mode'] === 's2s'; ?>
+    <tr>
+      <td><?= View::e($c['created_at']) ?></td>
+      <td><?= View::e($c['offer_name']) ?></td>
+      <td><?= $isS2s ? 'S2S' : 'Direct' ?></td>
+      <td><code><?= View::e($c['click_id']) ?></code></td>
+      <td><?= $isS2s ? ((int)$c['converted'] ? '<span class="badge badge-ok">YES</span>' : '<span class="badge badge-warn">NO</span>') : '<span class="muted">network panel</span>' ?></td>
+      <td><?= $c['payout'] !== null ? '$' . number_format((float)$c['payout'], 2) : '-' ?></td>
+    </tr>
+  <?php endforeach; ?>
+  <?php if (empty($offerClicks)): ?><tr><td colspan="6" class="muted">No offer clicks.</td></tr><?php endif; ?>
+  </tbody>
+</table>
+</div>

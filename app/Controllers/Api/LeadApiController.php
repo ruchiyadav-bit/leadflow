@@ -81,6 +81,7 @@ final class LeadApiController
             'utm_source','utm_medium','utm_campaign','utm_content','api_key',
             'trustedform_cert','xxTrustedFormCertUrl','jornaya_lead_id','leadid_token',
             'consent_version','disclosure_version','privacy_version','terms_version','landing_url','consent_timestamp',
+            'offer_id',
         ]);
         $custom = array_diff_key($data, array_flip($known));
 
@@ -91,10 +92,24 @@ final class LeadApiController
         $tree = $treeService->findForLead($lead);
         $outcome = $this->orchestrator->process($lead, $tree);
 
-        return Response::json([
+        $payload = [
             'lead_id' => $lead['lead_id'],
             'outcome' => $outcome,
-        ], 201);
+        ];
+
+        // Affiliate offer (S2S Dashboard / Affiliate Direct): return a tracked redirect link for the lander
+        if (!empty($data['offer_id']) && ctype_digit((string)$data['offer_id'])) {
+            $payload['redirect_url'] = $this->baseUrl($req) . '/go/' . (int)$data['offer_id']
+                . '?' . http_build_query(['lead_id' => $lead['lead_id'], 'sub_id' => $data['sub_id'] ?? null]);
+        }
+
+        return Response::json($payload, 201);
+    }
+
+    private function baseUrl(Request $req): string
+    {
+        $proto = $req->header('x-forwarded-proto') ?? (!empty($req->server['HTTPS']) ? 'https' : 'http');
+        return $proto . '://' . ($req->header('host') ?? 'localhost');
     }
 
     public function index(Request $req): Response

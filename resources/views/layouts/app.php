@@ -53,6 +53,7 @@ pre { background:#0d1117; padding:12px; border-radius:6px; overflow-x:auto; font
     <a href="/leads">Leads</a>
     <a href="/buyers">Buyers</a>
     <a href="/ping-trees">Ping Trees</a>
+    <a href="/offers">Offers</a>
     <a href="/reports">Reports</a>
     <a href="/logout">Logout</a>
   </nav>
