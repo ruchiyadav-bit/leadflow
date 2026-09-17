@@ -8,10 +8,11 @@ use LeadFlow\Core\Response;
 use LeadFlow\Core\View;
 use LeadFlow\Repositories\LeadRepository;
 use LeadFlow\Repositories\PingRepository;
+use LeadFlow\Repositories\OfferRepository;
 
 final class LeadsController
 {
-    public function __construct(private LeadRepository $leads, private PingRepository $pings) {}
+    public function __construct(private LeadRepository $leads, private PingRepository $pings, private OfferRepository $offers) {}
 
     public function index(Request $req): Response
     {
@@ -29,6 +30,7 @@ final class LeadsController
             'history' => $this->leads->statusHistory((int)$lead['id']),
             'pings' => $this->pings->pingsForLead((int)$lead['id']),
             'posts' => $this->pings->postsForLead((int)$lead['id']),
+            'offerClicks' => $this->offers->clicksForLead((int)$lead['id']),
             'user' => $req->user,
         ]);
     }

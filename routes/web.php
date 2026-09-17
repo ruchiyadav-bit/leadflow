@@ -7,12 +7,17 @@ use LeadFlow\Controllers\Web\BuyersController;
 use LeadFlow\Controllers\Web\LeadsController;
 use LeadFlow\Controllers\Web\PingTreesController;
 use LeadFlow\Controllers\Web\ReportsController;
+use LeadFlow\Controllers\Web\OffersController;
+use LeadFlow\Controllers\Api\OfferTrackingController;
 use LeadFlow\Middleware\WebAuthMiddleware;
 
 $router->get('/', fn() => \LeadFlow\Core\Response::redirect('/dashboard'));
 $router->get('/login', [AuthController::class, 'showLogin']);
 $router->post('/login', [AuthController::class, 'login']);
 $router->get('/logout', [AuthController::class, 'logout']);
+// Public offer tracking (click redirect + S2S postback)
+$router->get('/go/{id}', [OfferTrackingController::class, 'click']);
+$router->get('/postback/{id}', [OfferTrackingController::class, 'postback']);
 $router->get('/health', fn() => \LeadFlow\Core\Response::json(['status' => 'ok', 'ts' => time()]));
 
 $router->group(['middleware' => [WebAuthMiddleware::class]], function ($r) {
@@ -32,6 +37,13 @@ $router->group(['middleware' => [WebAuthMiddleware::class]], function ($r) {
     $r->post('/ping-trees', [PingTreesController::class, 'store']);
     $r->get('/ping-trees/{id}', [PingTreesController::class, 'show']);
     $r->post('/ping-trees/{id}', [PingTreesController::class, 'update']);
+
+    $r->get('/offers', [OffersController::class, 'index']);
+    $r->get('/offers/new', [OffersController::class, 'create']);
+    $r->post('/offers', [OffersController::class, 'store']);
+    $r->get('/offers/{id}', [OffersController::class, 'show']);
+    $r->post('/offers/{id}', [OffersController::class, 'update']);
+    $r->post('/offers/{id}/toggle', [OffersController::class, 'toggle']);
 
     $r->get('/reports', [ReportsController::class, 'index']);
     $r->get('/reports/revenue.csv', [ReportsController::class, 'exportRevenueCsv']);
