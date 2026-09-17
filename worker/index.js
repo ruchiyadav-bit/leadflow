@@ -15,6 +15,7 @@ const RETRY_DELAY_SEC = parseInt(env('WORKER_RETRY_DELAY_SEC', '300'), 10);
 const STALE_LOCK_MIN = parseInt(env('WORKER_STALE_LOCK_MIN', '10'), 10);
 const HEADLESS = env('WORKER_HEADLESS', 'true') !== 'false';
 const STEP_TIMEOUT_MS = 15000;
+const BROWSER_IDLE_CLOSE_MS = parseInt(env('WORKER_BROWSER_IDLE_SEC', '60'), 10) * 1000;
 
 const pool = mysql.createPool({
   host: env('DB_HOST', '127.0.0.1'),
@@ -33,11 +34,36 @@ const log = (level, msg, extra = {}) =>
 
 let browser = null;
 let stopping = false;
+let activeJobs = 0;
+let lastUsed = 0;
+
+/** Chromium path: CHROME_PATH (e.g. Alpine's /usr/bin/chromium-browser) or Playwright's bundled browser. */
+function chromePath() {
+  const fs = require('fs');
+  const candidates = [process.env.CHROME_PATH, '/usr/bin/chromium-browser', '/usr/bin/chromium'].filter(Boolean);
+  if (!process.env.CHROME_PATH) return undefined;
+  return candidates.find((p) => fs.existsSync(p));
+}
 
 async function getBrowser() {
+  lastUsed = Date.now();
   if (browser && browser.isConnected()) return browser;
-  browser = await chromium.launch({ headless: HEADLESS });
+  browser = await chromium.launch({
+    headless: HEADLESS,
+    executablePath: chromePath(),
+    args: ['--disable-dev-shm-usage', '--disable-gpu'],
+  });
   return browser;
+}
+
+/** Close Chromium when idle to free RAM (important when sharing a small container). */
+async function closeIdleBrowser() {
+  if (browser && activeJobs === 0 && Date.now() - lastUsed > BROWSER_IDLE_CLOSE_MS) {
+    const b = browser;
+    browser = null;
+    await b.close().catch(() => {});
+    log('info', 'browser closed (idle)');
+  }
 }
 
 /** Atomically claim the next due job. */
@@ -224,13 +250,21 @@ async function slot(n) {
     } catch (e) {
       log('error', 'claim failed', { slot: n, error: e.message });
     }
-    if (!job) { await new Promise((r) => setTimeout(r, POLL_MS)); continue; }
+    if (!job) {
+      await closeIdleBrowser();
+      await new Promise((r) => setTimeout(r, POLL_MS));
+      continue;
+    }
+    activeJobs++;
     try {
       await processJob(job);
     } catch (e) {
       log('error', 'job crashed', { slot: n, submission_id: job.id, error: e.message });
       await pool.query(`UPDATE form_submissions SET status = 'queued', locked_at = NULL, next_attempt_at = (NOW() + INTERVAL ? SECOND), error_message = ?, updated_at = NOW() WHERE id = ?`,
         [RETRY_DELAY_SEC, String(e.message).slice(0, 1000), job.id]).catch(() => {});
+    } finally {
+      activeJobs--;
+      lastUsed = Date.now();
     }
   }
 }

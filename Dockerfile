@@ -12,10 +12,20 @@ RUN apk add --no-cache \
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
+# Form Partners worker (Node + Playwright) runs inside this same container via supervisord.
+# Uses Alpine's Chromium (Playwright's bundled browser does not run on Alpine).
+RUN apk add --no-cache nodejs npm chromium nss freetype harfbuzz ttf-freefont
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 \
+    CHROME_PATH=/usr/bin/chromium-browser \
+    WORKER_CONCURRENCY=1
+
 WORKDIR /var/www/html
 
 COPY composer.json composer.lock* ./
 RUN composer install --no-dev --optimize-autoloader --no-interaction
+
+COPY worker/package.json worker/
+RUN cd worker && npm install --omit=dev --no-audit --no-fund
 
 COPY . .
 
